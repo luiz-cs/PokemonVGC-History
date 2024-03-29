@@ -1,0 +1,68 @@
+---
+title: "Pokémon VGC History"
+output: html_notebook
+---
+```{r}
+library(tidyr)
+library(ggplot2)
+library(here)
+```
+
+
+```{r}
+vgc <- read.csv(here("Data/Pokémon VGC Teams - VGC.csv"))
+pkdex <- read.csv(here("Data/Pokémon VGC Teams - Pokedex.csv")) 
+
+vgc <- vgc %>% 
+  pivot_longer(cols = starts_with(c("Pokémon.", "Forms.")),
+               names_to = c(".value", "No"),
+               names_pattern = "(\\w+)\\.(.*)",
+               values_drop_na = T)%>%   
+  rename("Pokémon" = "mon")
+
+vgc <- vgc %>% 
+  group_by(Year, Pokémon, Forms) %>% 
+  summarise(n = n())
+  
+pkdex <- pkdex %>% 
+  select(ID, Name, Generation) %>% 
+  rename("Pokémon" = Name) %>% 
+  filter(!duplicated(ID))
+
+vgc <- left_join(vgc, pkdex, by = "Pokémon") %>%
+   filter(!is.na(ID)) %>%
+   arrange(ID, Year)
+         
+rm(pkdex)
+
+npkm <- vgc %>% 
+  group_by(Pokémon) %>% 
+  summarise(years = n(), appearences = sum(n), importance = appearences*years) %>% 
+  arrange(desc(importance)) 
+
+
+vgc <- left_join(vgc, npkm, by = "Pokémon") %>%
+   arrange(ID, Year)
+
+```
+
+```{r}
+
+vgc1 <-  vgc %>% 
+  filter(importance >= 50) %>% 
+  arrange(Generation)
+
+vgc1$factor <- (as.double(factor(vgc1$ID, levels = unique(vgc1$ID))))
+vgc1$Generation <- factor(vgc1$Generation)
+
+vgc1 %>%
+  ggplot() +
+  geom_hline(aes(yintercept = factor), color = "black", linetype = "solid", alpha = 0.5)+
+  geom_rect(aes(xmax = Year + 0.5, xmin = Year - 0.5, ymin = factor - (n/10), ymax = factor + (n/10), fill = Generation), color = "black") +
+  scale_y_reverse(breaks = unique(vgc1$factor), labels = unique(vgc1$Pokémon)) + 
+  scale_x_continuous(breaks = unique(vgc1$Year), labels = unique(vgc1$Year))+
+  theme_minimal()
+
+
+```
+
