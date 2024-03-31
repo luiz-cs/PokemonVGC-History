@@ -4,6 +4,7 @@ output: html_notebook
 ---
 ```{r}
 library(tidyr)
+library(dplyr)
 library(ggplot2)
 library(here)
 ```
@@ -30,8 +31,11 @@ pkdex <- pkdex %>%
   filter(!duplicated(ID))
 
 vgc <- left_join(vgc, pkdex, by = "Pokémon") %>%
-   filter(!is.na(ID)) %>%
-   arrange(ID, Year)
+   filter(!is.na(ID)) %>% 
+   group_by(Year) %>% 
+   mutate(percentage = (n/sum(n))) %>% 
+   ungroup() 
+
          
 rm(pkdex)
 
@@ -42,26 +46,120 @@ npkm <- vgc %>%
 
 
 vgc <- left_join(vgc, npkm, by = "Pokémon") %>%
-   arrange(ID, Year)
+  mutate(octil = ntile(percentage, 8)) %>% 
+  mutate(Gen_octil = paste(Generation, octil, sep = "-")) %>% 
+  arrange(ID, Year)
 
+```
+
+
+```{r}
+palet <- c("1-1" = "#fffbe8",
+           "1-2" = "#fff6d0",
+           "1-3" = "#fff2b9",
+           "1-4" = "#ffeea1",
+           "1-5" = "#ffe989",
+           "1-6" = "#ffe570",
+           "1-7" = "#ffe155",
+           "1-8" = "#ffdd33",
+           "2-1" = "#f1f8f9",
+           "2-2" = "#e2f1f3",
+           "2-3" = "#d4eaee",
+           "2-4" = "#c5e3e8",
+           "2-5" = "#b7dde2",
+           "2-6" = "#a8d6dc",
+           "2-7" = "#99cfd7",
+           "2-8" = "#89c8d1",
+           "3-1" = "#e7f2e5",
+           "3-2" = "#cee6cc",
+           "3-3" = "#b6d9b3",
+           "3-4" = "#9ecc9a",
+           "3-5" = "#85c082",
+           "3-6" = "#6bb36a",
+           "3-7" = "#50a652",
+           "3-8" = "#2e993a",
+           "4-1" = "#ffe9e5",
+           "4-2" = "#ffd3cc",
+           "4-3" = "#fdbdb4",
+           "4-4" = "#f9a79b",
+           "4-5" = "#f59084",
+           "4-6" = "#ef796d",
+           "4-7" = "#e86157",
+           "4-8" = "#e04542",
+           "5-1" = "#e7eff8",
+           "5-2" = "#cfdff1",
+           "5-3" = "#b6d0ea",
+           "5-4" = "#9dc0e3",
+           "5-5" = "#83b1dc",
+           "5-6" = "#67a2d5",
+           "5-7" = "#4693ce",
+           "5-8" = "#0a85c7",
+           "6-1" = "#fee7e6",
+           "6-2" = "#fbcecd",
+           "6-3" = "#f7b6b4",
+           "6-4" = "#f29d9c",
+           "6-5" = "#eb8485",
+           "6-6" = "#e46a6f",
+           "6-7" = "#db4e59",
+           "6-8" = "#d12945",
+           "7-1" = "#fff2e4",
+           "7-2" = "#ffe6c9",
+           "7-3" = "#ffd9af",
+           "7-4" = "#ffcd94",
+           "7-5" = "#ffc07a",
+           "7-6" = "#fcb45f",
+           "7-7" = "#f8a742",
+           "7-8" = "#f49b1f",
+           "8-1" = "#e9f3fc",
+           "8-2" = "#d3e6fa",
+           "8-3" = "#bcdaf7",
+           "8-4" = "#a4cef4",
+           "8-5" = "#8ac2f1",
+           "8-6" = "#6eb6ee",
+           "8-7" = "#4cabeb",
+           "8-8" = "#029fe8",
+           "9-1" = "#f8e9f6",
+           "9-2" = "#f0d2ee",
+           "9-3" = "#e8bce5",
+           "9-4" = "#dfa6dc",
+           "9-5" = "#d68fd3",
+           "9-6" = "#cc78ca",
+           "9-7" = "#c261c1",
+           "9-8" = "#b847b8")
 ```
 
 ```{r}
 
-vgc1 <-  vgc %>% 
-  filter(importance >= 50) %>% 
+vgc2 <-  vgc %>% 
+  group_by(ID) %>% 
+  filter(sum(n) >= 10) %>%
+  ungroup() %>% 
   arrange(Generation)
 
-vgc1$factor <- (as.double(factor(vgc1$ID, levels = unique(vgc1$ID))))
-vgc1$Generation <- factor(vgc1$Generation)
+vgc2$factor <- (as.double(factor(vgc2$ID, levels = unique(vgc2$ID))))
+min_factor <- min(vgc2$factor)
+max_factor <- max(vgc2$factor)
 
-vgc1 %>%
+vgcheatmap <- vgc2 %>%
   ggplot() +
-  geom_hline(aes(yintercept = factor), color = "black", linetype = "solid", alpha = 0.5)+
-  geom_rect(aes(xmax = Year + 0.5, xmin = Year - 0.5, ymin = factor - (n/10), ymax = factor + (n/10), fill = Generation), color = "black") +
-  scale_y_reverse(breaks = unique(vgc1$factor), labels = unique(vgc1$Pokémon)) + 
-  scale_x_continuous(breaks = unique(vgc1$Year), labels = unique(vgc1$Year))+
-  theme_minimal()
+  geom_rect(aes(xmin = 2020 - 0.5, xmax = 2021 + 0.5, ymin = min_factor - 0.5, ymax = max_factor + 0.5), fill = "darkgrey", alpha = 0.5) + 
+  geom_hline(aes(yintercept = factor - 0.5), color = "black", linetype = "solid", alpha = 0.5) +
+  geom_vline(aes(xintercept = Year - 0.5), color = "black", linetype = "dotted", alpha = 0.5)+
+  geom_hline(aes(yintercept = factor + 0.5), color = "black", linetype = "solid", alpha = 0.5) +
+  geom_vline(aes(xintercept = Year + 0.5), color = "black", linetype = "dotted", alpha = 0.5) +
+  geom_tile(aes(x = Year, y = factor, fill = Gen_octil), show.legend = FALSE) +
+  scale_fill_manual(values = palet) +
+  geom_rect(aes(xmin = 2020 - 0.5, xmax = 2021 + 0.5, ymin = min_factor - 0.5, ymax = max_factor + 0.5), fill = "darkgrey", alpha = 0.5) + 
+  scale_y_reverse(breaks = unique(vgc2$factor), labels = unique(vgc2$Pokémon)) +
+  scale_x_continuous(breaks = c(2009:2023), labels = c("2009", "2010","2011", "2012","2013", "2014","2015", "2016","2017", "2018","2019", "Covid", "Break", "2022", "2023"))+
+  theme_linedraw()+
+  theme(panel.background = element_rect(fill = 'lightgrey', color = 'black'),
+          panel.grid.major = element_line(color = 'black'),
+          panel.grid.minor = element_line(color = 'black', linetype = "dotted"))
+ggsave("vgcheatmap.png", vgcheatmap, height = 20, width = 9)
+
+vgcheatmap
+
 
 
 ```
