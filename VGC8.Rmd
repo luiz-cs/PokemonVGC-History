@@ -132,7 +132,7 @@ palet <- c("1-1" = "#fffbe8",
 
 vgc2 <-  vgc %>% 
   group_by(ID) %>% 
-  filter(sum(n) >= 10) %>%
+  filter(sum(n) >= 15) %>%
   ungroup() %>% 
   arrange(Generation)
 
@@ -142,6 +142,7 @@ max_factor <- max(vgc2$factor)
 
 vgcheatmap <- vgc2 %>%
   ggplot() +
+  ylim(c(min_factor, max_factor))+
   geom_rect(aes(xmin = 2020 - 0.5, xmax = 2021 + 0.5, ymin = min_factor - 0.5, ymax = max_factor + 0.5), fill = "darkgrey", alpha = 0.5) + 
   geom_hline(aes(yintercept = factor - 0.5), color = "black", linetype = "solid", alpha = 0.5) +
   geom_vline(aes(xintercept = Year - 0.5), color = "black", linetype = "dotted", alpha = 0.5)+
@@ -149,14 +150,32 @@ vgcheatmap <- vgc2 %>%
   geom_vline(aes(xintercept = Year + 0.5), color = "black", linetype = "dotted", alpha = 0.5) +
   geom_tile(aes(x = Year, y = factor, fill = Gen_octil), show.legend = FALSE) +
   scale_fill_manual(values = palet) +
-  geom_rect(aes(xmin = 2020 - 0.5, xmax = 2021 + 0.5, ymin = min_factor - 0.5, ymax = max_factor + 0.5), fill = "darkgrey", alpha = 0.5) + 
-  scale_y_reverse(breaks = unique(vgc2$factor), labels = unique(vgc2$Pokémon)) +
-  scale_x_continuous(breaks = c(2009:2023), labels = c("2009", "2010","2011", "2012","2013", "2014","2015", "2016","2017", "2018","2019", "Covid", "Break", "2022", "2023"))+
+  geom_rect(aes(xmin = 2020 - 0.5, xmax = 2021 + 0.5, ymin = min_factor - 0.5, ymax = max_factor + 0.5), fill = "darkgrey", alpha = 0.5) +
+  geom_vline(aes(xintercept =  2011 - 0.5), color = "#0a85c7", size = 1)+
+  geom_vline(aes(xintercept =  2014 - 0.5), color = "#d12945", size = 1)+
+  geom_vline(aes(xintercept =  2017 - 0.5), color = "#f49b1f", size = 1)+
+  geom_vline(aes(xintercept =  2020 - 0.5), color = "#029fe8", size = 1)+
+  geom_vline(aes(xintercept =  2023 - 0.5), color = "#b847b8", size = 1)+
+  scale_y_reverse(breaks = unique(vgc2$factor), 
+                  labels = unique(vgc2$Pokémon),
+                  expand = c(0,0)) +
+  scale_x_continuous(breaks = c(2009:2023), 
+                     labels = c("2009", "2010","2011", "2012","2013", "2014","2015", "2016","2017", "2018","2019", "Covid", "Break", "2022", "2023"),
+                     expand = c(0,0),
+                     position = "top",
+                     sec.axis = dup_axis(labels = c("Gen IV", "", "", "Gen V", "","", "Gen VI", "", "", "Gen VII", "","", "Gen VIII", "","Gen IX")))+
   theme_linedraw()+
   theme(panel.background = element_rect(fill = 'lightgrey', color = 'black'),
-          panel.grid.major = element_line(color = 'black'),
-          panel.grid.minor = element_line(color = 'black', linetype = "dotted"))
-ggsave("vgcheatmap.png", vgcheatmap, height = 20, width = 9)
+        panel.grid.major = element_line(color = 'black'),
+        panel.grid.minor = element_line(color = 'black', linetype = "dotted"),
+        axis.title.y = element_blank(),
+        axis.title.x.bottom = element_blank(),
+        axis.text.y = element_text(size = 30, family = "Verdana", face="bold"),
+        axis.text.x.top = element_text(size = 12, family = "Verdana", face="bold"),
+        axis.text.x.bottom = element_text(size = 15, family = "Verdana", face="bold"),
+        axis.title = element_text(size = 30, family = "Verdana", face= "bold"))
+
+ggsave("vgcheatmap.png", vgcheatmap, height = 20, width = 12)
 
 vgcheatmap
 
